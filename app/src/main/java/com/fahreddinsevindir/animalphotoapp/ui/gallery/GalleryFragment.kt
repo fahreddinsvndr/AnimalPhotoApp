@@ -9,14 +9,17 @@ import androidx.core.view.isVisible
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.observe
+import androidx.navigation.fragment.findNavController
 import androidx.paging.LoadState
 import com.fahreddinsevindir.animalphotoapp.R
+import com.fahreddinsevindir.animalphotoapp.data.UnsplashPhoto
 import com.fahreddinsevindir.animalphotoapp.databinding.FragmentGalleryBinding
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.android.synthetic.main.unsplash_photo_load_state_footer.*
 
 @AndroidEntryPoint
-class GalleryFragment : Fragment(R.layout.fragment_gallery) {
+class GalleryFragment : Fragment(R.layout.fragment_gallery),
+    UnsplashPhotoAdapter.OnItemClickListener {
 
     private val viewModel by viewModels<GalleryViewModel>()
 
@@ -28,10 +31,11 @@ class GalleryFragment : Fragment(R.layout.fragment_gallery) {
 
         _binding = FragmentGalleryBinding.bind(view)
 
-        val adapter = UnsplashPhotoAdapter()
+        val adapter = UnsplashPhotoAdapter(this)
 
         binding.apply {
             recyclerView.setHasFixedSize(true)
+            recyclerView.itemAnimator = null
             recyclerView.adapter = adapter.withLoadStateHeaderAndFooter(
                 header = UnsplashPhotoLoadStateAdapter { (adapter.retry()) },
                 footer = UnsplashPhotoLoadStateAdapter { (adapter.retry()) }
@@ -66,9 +70,12 @@ class GalleryFragment : Fragment(R.layout.fragment_gallery) {
             }
         }
 
-
-
         setHasOptionsMenu(true)
+    }
+
+    override fun onItemClick(photo: UnsplashPhoto) {
+        val action = GalleryFragmentDirections.actionGalleryFragmentToDetailsFragment(photo)
+        findNavController().navigate(action)
     }
 
     override fun onCreateOptionsMenu(menu: Menu, inflater: MenuInflater) {
