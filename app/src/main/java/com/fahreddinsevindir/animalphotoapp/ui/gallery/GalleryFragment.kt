@@ -5,12 +5,15 @@ import android.view.Menu
 import android.view.MenuInflater
 import android.view.View
 import android.widget.SearchView
+import androidx.core.view.isVisible
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.observe
+import androidx.paging.LoadState
 import com.fahreddinsevindir.animalphotoapp.R
 import com.fahreddinsevindir.animalphotoapp.databinding.FragmentGalleryBinding
 import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.android.synthetic.main.unsplash_photo_load_state_footer.*
 
 @AndroidEntryPoint
 class GalleryFragment : Fragment(R.layout.fragment_gallery) {
@@ -33,12 +36,38 @@ class GalleryFragment : Fragment(R.layout.fragment_gallery) {
                 header = UnsplashPhotoLoadStateAdapter { (adapter.retry()) },
                 footer = UnsplashPhotoLoadStateAdapter { (adapter.retry()) }
             )
+            buttonRetry.setOnClickListener {
+                adapter.retry()
+            }
 
         }
 
         viewModel.photos.observe(viewLifecycleOwner) {
             adapter.submitData(viewLifecycleOwner.lifecycle, it)
         }
+
+        adapter.addLoadStateListener { loadState ->
+            binding.apply {
+                progressBar.isVisible = loadState.source.refresh is LoadState.Loading
+                recyclerView.isVisible = loadState.source.refresh is LoadState.NotLoading
+                buttonRetry.isVisible = loadState.source.refresh is LoadState.Error
+                textViewError.isVisible = loadState.source.refresh is LoadState.Error
+
+                // empty view
+                if (loadState.source.refresh is LoadState.NotLoading &&
+                    loadState.append.endOfPaginationReached &&
+                    adapter.itemCount < 1
+                ) {
+                    recyclerView.isVisible = false
+                    textViewEmpty.isVisible = true
+                } else {
+                    textViewEmpty.isVisible = false
+                }
+            }
+        }
+
+
+
         setHasOptionsMenu(true)
     }
 
@@ -50,7 +79,8 @@ class GalleryFragment : Fragment(R.layout.fragment_gallery) {
         val searchItem = menu.findItem(R.id.action_search)
         val searchView = searchItem.actionView as androidx.appcompat.widget.SearchView
 
-        searchView.setOnQueryTextListener(object : androidx.appcompat.widget.SearchView.OnQueryTextListener {
+        searchView.setOnQueryTextListener(object :
+            androidx.appcompat.widget.SearchView.OnQueryTextListener {
             override fun onQueryTextSubmit(query: String?): Boolean {
                 if (query != null) {
                     binding.recyclerView.scrollToPosition(0)
